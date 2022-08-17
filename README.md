@@ -3,9 +3,9 @@
 FPGA-SATA
 ===========================
 
-SATA Gen2 host core (HBA) ，可运行在具有 GTH 的 Xilinx FPGA 上。提供基于 [netfpga-sume](https://www.xilinx.com/products/boards-and-kits/1-6ogkf5.html) 官方开发板的示例，可实现硬盘读写。
+SATA Gen2 host (HBA) ，可运行在具有 GTH 的 Xilinx FPGA 上。提供基于 [netfpga-sume](https://www.xilinx.com/products/boards-and-kits/1-6ogkf5.html) 官方开发板的示例，可实现硬盘读写。
 
-本开源库仅提供普通性能的体验版本，并用 .dcp 网表对核心代码进行加密。如需中高性能版本的网表、 Verilog 源码、或需要定制其它功能的 SATA 控制器，请联系 邮箱 : 629708558@qq.com  QQ : 629708558
+本开源库提供普通性能版本，并用 .dcp 网表对核心代码进行加密。如需中高性能版本的网表、 Verilog 源码、或需要定制其它功能的 SATA 控制器，请联系 Mail : 629708558@qq.com  QQ : 629708558
 
 # 简介
 
@@ -13,22 +13,22 @@ SATA是硬盘最广泛使用的接口协议。如**图1**是SATA体系结构，�
 
 | ![SATA_ARCH](./figures/sata_arch.png) |
 | :-----------------------------------: |
-|        **图1**：SATA 体系结构         |
+|         **图1**：SATA 协议栈          |
 
 SATA 协议自下而上包含：物理层(Physical Layer, PHY)、链路层(Link Layer)、传输层(Transport Layer)、命令层(Command Layer) ：
 
 - **物理层**：下游用两对串行差分信号对连接 SATA device ，包括发送用的差分对（SATA_A+, SATA_A-) 和接收用的差分对（SATA_B+, SATA_B-) 。进行串行信号的时钟恢复、串并转换后，用并行信号与上游的链路层进行交互。
-- **链路层和传输层**：从下到上分别实现：8b10b 编解码、加扰/解扰、CRC计算和检验、数据缓存、流控、FIS数据包的封装和解析。与上游的命令层使用一种叫 **Frame Information Structures** (**FIS**) 的数据包结构进行交互。
+- **链路层和传输层**：从下到上分别实现：8b10b 编解码、加扰/解扰、CRC计算和检验、流控、数据缓存、FIS数据包的封装和解析。与上游的命令层使用一种叫 **Frame Information Structures** (**FIS**) 的数据包结构进行交互。
 - **命令层**：接受上游的读写命令，生成和解析命令FIS，实现硬盘读写操作。
 
 本库仅仅用硬件实现了从物理层到传输层的功能，原因如下：
 
 - 从物理层到传输层的功能虽然并不简单，但功能比较单一，仅仅是为了提供可靠的 FIS 传输机制，耦合度较高。而且 FIS 是统一的数据流格式，因此从传输层到命令层的数据接口较为简单，易于理解和使用。
-- 之所以不实现命令层，是因为由于历史兼容性的原因，SATA 所支持的 ATA 和 ATAPI 等命令集所规定的硬盘读写方式较多，包括 PIO 、 DMA 等，因此一个完整的命令层需要实现众多繁杂的命令的状态机，但其目的并不复杂，都是为了用各种方式来实现硬盘读写。
+- 之所以不实现命令层，是因为由于历史兼容性的原因，SATA 所支持的 ATA 和 ATAPI 等命令集所规定的硬盘读写方式较多，包括 PIO 、 DMA 等，因此一个完整的命令层需要实现众多繁杂的命令的状态机。但其目的并不复杂，都是为了用各种方式来实现硬盘读写。
 
 本库对各层的实现方法如下：
 
-- 虽然没有用硬件实现命令层，但我用硬件实现了一个用 UART 收发 FIS 的示例工程，提供了 UART “FIS透传” 功能：你可以用电脑中的串口软件（比如minicom, putty, hyper-terminal, 串口助手等）来发送 FIS 给 Device，并能看到 Device 发来的 FIS ，只要我们按命令层规定的 FIS 格式来发送数据，就能直观地实现硬盘的读写。
+- 虽然没有用硬件实现命令层，但我用硬件实现了一个用 UART 收发 FIS 的示例工程，提供了 UART “FIS透传” 功能：你可以用电脑中的串口软件（比如minicom, putty, hyper-terminal, 串口助手等）来发送 FIS 给 Device，并能看到 Device 发来的 FIS 。只要我们按命令层规定的 FIS 格式来发送数据，就能直观地实现硬盘的读写。
 - 链路层和传输层（不包括链路层中的 8b10b 编解码）用 Verilog 实现（加密为 dcp 网表）。之所以不实现 8b10b 解码，是因为 Xilinx 的 GT 原语能实现 8b10b  编解码。
 - 物理层：用 Xilinx 的 GTH 原语实现。因此本工程仅支持具有 GTH 的 Xilinx FPGA ，比如 Virtex7 、Zynq Ultrascale+ 等。
 
@@ -39,13 +39,13 @@ SATA 协议自下而上包含：物理层(Physical Layer, PHY)、链路层(Link 
 以下是本工程的代码文件的树形结构：
 
 - vivado_netfpgasume/**fpga_top.xdc** : 引脚约束文件，把端口约束到  [netfpga-sume](https://www.xilinx.com/products/boards-and-kits/1-6ogkf5.html) 的引脚上。
-- RTL/fpga_uart_sata_example/**fpga_uart_sata_example_top.sv** : FPGA工程顶层 (Verilog)
-  - vivado_netfpgasume/IP/clk_wiz_0 : 生成 60MHz 时钟提供给 SATA HBA core 的 CPLL_refclk (Xilinx clock wizard IP)
-  - RTL/sata_hba/**sata_hba_top.sv** : SATA HBA 顶层，实现物理层、链路层、传输层 (Verilog)
-    - RTL/sata_hba/**sata_gth.sv** : 实现物理层，调用了 Xilinx GTH 相关的原语 (Verilog)
-    - RTL/sata_hba/**sata_link_transport.dcp** : 实现了链路层和传输层 (dcp加密网表)
-  - RTL/fpga_uart_sata_example/**uart_rx.sv** : 接收 Host-PC 发来的 UART 信号，解析其格式，把它解析成 FIS 数据流发送给 SATA HBA (Verilog)
-  - RTL/fpga_uart_sata_example/**uart_tx.sv** : 接收 SATA HBA 收到的 FIS，把它转换成人类可读的 ASCII-HEX 格式并用 UART 发送给 Host-PC (Verilog)
+- RTL/fpga_uart_sata_example/**fpga_uart_sata_example_top.sv** : FPGA工程顶层 (**Verilog**)
+  - RTL/IP/clk_wiz_0 : 生成 60MHz 时钟提供给 SATA HBA core 的 CPLL_refclk (**Xilinx clock wizard IP**)
+  - RTL/sata_hba/**sata_hba_top.sv** : SATA HBA 顶层，实现物理层、链路层、传输层 (**Verilog**)
+    - RTL/sata_hba/**sata_gth.sv** : 实现物理层，调用了 Xilinx GTH 相关的原语 (**Verilog**)
+    - RTL/sata_hba/**sata_link_transport.dcp** : 实现了链路层和传输层 (**dcp加密网表**)
+  - RTL/fpga_uart_sata_example/**uart_rx.sv** : 接收 Host-PC 发来的 UART 信号，把它解析成 FIS 数据流发送给 HBA (**Verilog**)
+  - RTL/fpga_uart_sata_example/**uart_tx.sv** : 接收 HBA 收到的 FIS，把它转换成人类可读的 ASCII-HEX 格式并用 UART 发送给 Host-PC (**Verilog**)
 
 | ![fpga_example](./figures/fpga_example.png) |
 | :-----------------------------------------: |
@@ -57,7 +57,7 @@ SATA 协议自下而上包含：物理层(Physical Layer, PHY)、链路层(Link 
 
 RTL/sata_hba/**sata_hba_top.sv** 是 SATA HBA 的顶层模块，具有简洁的 FIS 收发接口。因此如果你想实现其它 SATA 应用（比如自己编写命令层），需要充分理解 sata_hba_top.sv 的接口波形。
 
-首先我们需要理解 FIS 数据包的结构，如下表。FIS 的长度一定是 4 byte 的倍数。其中 CRC 对于模块调用者是不可见的，**sata_hba_top.sv** 会自动插入、检查并删除。模块调用者仅需要把 FIS-type 和 Payload 字段当成一个整体来发送和接收。在下文的语境中，我们用 **FIS长度** 指代 FIS-type + Payload 字段的总长度（最小 1 dwoard, 最大 2049 dword），而不包括 CRC 。
+首先我们需要理解 FIS 数据包的结构，如下表。FIS 的长度一定是 4 byte 的倍数。其中 CRC 对于模块调用者是不可见的，因为 **sata_hba_top.sv** 会自动插入、检查并删除。模块调用者仅需要把 FIS-type 和 Payload 字段当成一个整体来发送和接收。在下文的语境中，我们用 **FIS长度** 指代 FIS-type + Payload 字段的总长度（最小 1 dword, 最大 2049 dword），而不包括 CRC 。
 
 ​    *表：FIS 数据包结构*
 
@@ -152,13 +152,13 @@ module sata_hba_top (     // SATA gen2
 
 用 vivado 打开 vivado_netfpgasume/sata_netfpgasume.xpr 工程文件，编译并烧录。（我用的是 vivado 2019.1，如果你因为版本不兼容而无法打开工程，请重新建立工程，并手动添加工程相关的文件，注意 FPGA 的型号应该选 **xc7vx690tffg1761-3** ）
 
-烧录程序后，netfpga-sume 上的 LD0 亮说明 clk_wiz_0 正常工作。 LD1 亮说明 SATA 连接建立。本工程支持热插拔，如果拔下 SATA 线，LD1 会熄灭。重新插入后又会点亮。（虽然支持，但不建议对硬盘进行热插拔）
+烧录程序后，netfpga-sume 上的 LD0 亮说明 clk_wiz_0 正常工作。 LD1 亮说明 SATA 连接建立。本工程支持热插拔，如果拔下硬盘，LD1 会熄灭。重新插入后又会点亮。（虽然支持，但不建议对硬盘进行热插拔）
 
 如果你插入硬盘后 LD1 始终不亮，可以按下 netfpga-sume 上的 BTN0 对系统进行复位。
 
 ### UART 收发 FIS 的格式
 
-本例中的 uart_rx.sv 模块会把用户发送的 ASCII-HEX （人类可读）格式的 UART 数据转成 SATA HBA 模块所接受的 AXI-stream 格式；uart_tx.sv 模块会把 SATA HBA 发送的 AXI-stram 转成 ASCII-HEX 的 UART 格式。因此支持使用串口调试软件 （比如minicom, putty, hyper-terminal, 串口助手）进行 “FIS透传”。在此基础上我们需要按**命令层**规定的 FIS 格式来发送FIS，即可完成读写。
+本例中的 uart_rx.sv 模块会把用户发送的 ASCII-HEX （人类可读）格式的 UART 数据转成 SATA HBA 模块所接受的 AXI-stream 格式；uart_tx.sv 模块会把 SATA HBA 发送的 AXI-stream 转成 ASCII-HEX 的 UART 格式。因此支持使用串口调试软件 （比如minicom, putty, hyper-terminal, 串口助手）进行 “FIS透传”。在此基础上我们需要按**命令层**规定的 FIS 格式来发送FIS，即可完成读写。
 
 设一个 FIS 有 5个 dword，如下（十六进制），其中第一个 dword 是 FIS type ，后4个 dword 是 payload ，这也是 xfis_tdata 和 rfis_tdata 信号上依次出现的数据：
 
@@ -196,12 +196,6 @@ module sata_hba_top (     // SATA gen2
 
 ### 进行硬盘 identify
 
-在HBA和硬盘建立连接后，硬盘会先主动发送一个 5 dword 长度的 device signiture FIS ，比如我手头的 SV300S37A 固态硬盘的  device signiture FIS 如下：
-
-```
-01500034 00000001 00000000 00000001 00000000
-```
-
 在读写前，我们要向硬盘发起 identify 请求 FIS ，该 FIS 包含 5 个 dword :
 
 ```
@@ -226,7 +220,7 @@ module sata_hba_top (     // SATA gen2
 
 ### 用DMA方式进行硬盘读写
 
-**命令层**规定的读写方式很多，包括 PIO 和 DMA 等。这里以 DMA 为例。 DMA 读写以扇区 (sector) 为单位，每个 sector 是 512 byte = 128 dword ，一次可以指定读或写一个或多个 sector 。
+**命令层**规定的读写方式很多，包括 PIO 和 DMA 等。DMA 读写以**扇区**(sector)为单位，每个扇区 512 byte (128 dword) ，一次可以指定读写连续扇区的数量。用 48-bit LBA （logic block address, 逻辑块地址) 对扇区进行寻址，例如 LBA=0x000001234567 就代表第 0x1234567 个**扇区**。
 
 要进行DMA读写，HBA要发送 5 dword 长度的 DMA 读写请求 FIS ，其格式如下 （详见参考资料[1] ）：
 
@@ -234,9 +228,9 @@ module sata_hba_top (     // SATA gen2
 00WW8027 E0XXXXXX 00YYYYYY 000000ZZ 00000000
 ```
 
-以上FIS中， WW=25 代表读命令，WW=35 代表写命令。这些读写命令用 48bit 的 LBA （逻辑扇区地址）对硬盘内的扇区数据进行寻址， XXXXXX 是 LBA[23:0] ，YYYYYY 是 LBA[47:24] 。ZZ 是读写的扇区数量，一次可以读写一个或多个扇区。
+以上FIS中， WW=25 代表读命令，WW=35 代表写命令。XXXXXX 是 LBA[23:0] ，YYYYYY 是 LBA[47:24] 。ZZ 是读写的扇区数量，一次可以读写一个或多个扇区。
 
-例如我们要对 LBA=0x000000023456 （也就是第 0x00123456789A 个扇区）进行读，连续读 4 个扇区，则应该发送命令 FIS ：
+例如我们要对 LBA=0x000000023456 （也就是第 0x23456 个扇区）进行读，连续读 4 个扇区，则应该发送命令 FIS ：
 
 ```
 00258027 E0023456 00000000 00000004 00000000
@@ -263,7 +257,7 @@ module sata_hba_top (     // SATA gen2
 00358027 E0000001 00000000 00000001 00000000
 ```
 
-然后按照命令层的规定，硬盘会响应 1 个 dword 的 DMA active FIS （只有 FIS type 字段，且固定是 00000039 ，没有 payload ）：
+然后按照命令层的规定，硬盘会响应 1 个 dword 的 DMA active FIS （它只有 FIS type 字段，且固定是 00000039 ，没有 payload ）：
 
 ```
 00000039
@@ -277,7 +271,7 @@ module sata_hba_top (     // SATA gen2
 
 写数据成功后，磁盘会发送 5 个 dword 的状态响应 FIS 给 HBA 。
 
-用串口助手进行该写操作，如**图8**  。注意数据 FIS 的长度要一点都不能少，否则会被 device 视为错误的 FIS 。
+用串口助手进行该写操作，如**图8**  。注意数据 FIS 的长度不能多也不能少，否则会被 device 视为错误的 FIS 。
 
 |                ![uart3](./figures/uart3.png)                 |
 | :----------------------------------------------------------: |
@@ -291,9 +285,12 @@ module sata_hba_top (     // SATA gen2
 
 # 参考资料
 
-[1] 《SATA Storage Technology》 https://www.mindshare.com/Books/Titles/SATA_Storage_Technology
+[1] SATA Storage Technology : https://www.mindshare.com/Books/Titles/SATA_Storage_Technology
 
-[2] Nikola Zlatanov : design of an open-source sata core : https://www.researchgate.net/publication/295010956_Design_of_an_Open-Source_SATA_Core
+[2] Serial ATA: High Speed Serialized AT Attachment : https://www.seagate.com/support/disc/manuals/sata/sata_im.pdf
 
-[3] Louis Woods et al. : Groundhog - A Serial ATA Host Bus Adapter (HBA) for FPGAs : https://ieeexplore.ieee.org/abstract/document/6239818/
+[3] Nikola Zlatanov : design of an open-source sata core : https://www.researchgate.net/publication/295010956_Design_of_an_Open-Source_SATA_Core
 
+[4] Louis Woods et al. : Groundhog - A Serial ATA Host Bus Adapter (HBA) for FPGAs : https://ieeexplore.ieee.org/abstract/document/6239818/
+
+[5] 【技术干货】SATA协议浅析：从串行信号到读写硬盘 : https://zhuanlan.zhihu.com/p/554251608?
