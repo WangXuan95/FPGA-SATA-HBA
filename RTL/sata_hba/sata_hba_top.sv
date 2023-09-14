@@ -119,7 +119,9 @@ IBUFDS_GTE2 ibufds_gte2_gt_refclk (
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SATA link and transport layer
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-sata_link_transport sata_link_transport_i (
+sata_link_transport #(
+    .TX_CONT_ENABLE             ( "FALSE"                               )
+) sata_link_transport_i (
     // driving clock and reset
     .core_rstn                  ( core_rstn                             ),
     .clk                        ( clk                                   ),

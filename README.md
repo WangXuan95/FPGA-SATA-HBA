@@ -5,8 +5,6 @@ FPGA-SATA
 
 SATA Gen2 host (HBA) ，可运行在具有 GTH 的 Xilinx FPGA 上。本库提供基于 [netfpga-sume](https://www.xilinx.com/products/boards-and-kits/1-6ogkf5.html) 官方开发板的示例，可实现硬盘读写。
 
-本开源库提供普通性能版本，并用 .dcp 网表对核心代码进行加密。如需中高性能版本的网表、 Verilog源码、或定制其它功能的 SATA 控制器，请联系 Mail : 629708558@qq.com  QQ : 629708558
-
 另外，我写了一个介绍 SATA 的技术文章 [SATA协议浅析：从串行信号到读写硬盘](https://zhuanlan.zhihu.com/p/554251608) ，帮助大家理解 SATA 协议栈的细节。
 
 # 简介
@@ -31,7 +29,7 @@ SATA 协议自下而上包含：物理层(Physical Layer, PHY)、链路层(Link 
 本库对各层的实现方法如下：
 
 - 虽然没有用硬件实现命令层，但我在 FPGA 内实现了一个用 UART 收发 FIS 的示例工程，提供了 UART “FIS透传” 功能：你可以用电脑中的串口软件（比如minicom, putty, hyper-terminal, 串口助手等）来发送 FIS 给 Device，并能看到 Device 发来的 FIS 。基于此，只要我们按命令层规定的 FIS 格式来发送数据，就能实现硬盘的读写。
-- 链路层和传输层用 Verilog 实现（加密为 dcp 网表），但不包括链路层中的 8b10b 编解码，这是因为 Xilinx 的 GT 原语能实现 8b10b  编解码。
+- 链路层和传输层用 Verilog 实现，但不包括链路层中的 8b10b 编解码，这是因为 Xilinx 的 GT 原语能实现 8b10b  编解码。
 - 物理层：用 Xilinx 的 GTH 原语实现。因此本工程支持的是具有 GTH 的 Xilinx FPGA ，比如 Virtex7 、Zynq Ultrascale+ 等。
 
 
@@ -45,7 +43,7 @@ SATA 协议自下而上包含：物理层(Physical Layer, PHY)、链路层(Link 
   - RTL/IP/clk_wiz_0 : 生成 60MHz 时钟提供给 SATA HBA core 的 CPLL_refclk (**Xilinx clock wizard IP**)
   - RTL/sata_hba/**sata_hba_top.sv** : SATA HBA 顶层，实现物理层、链路层、传输层 (**Verilog**)
     - RTL/sata_hba/**sata_gth.sv** : 实现物理层，调用了 Xilinx GTH 相关的原语 (**Verilog**)
-    - RTL/sata_hba/**sata_link_transport.dcp** : 实现了链路层和传输层 (**dcp加密网表**)
+    - RTL/sata_hba/**sata_link_transport.sv** : 实现了链路层和传输层 (**Verilog**)
   - RTL/fpga_uart_sata_example/**uart_rx.sv** : 接收 Host-PC 发来的 UART 信号，把它解析成 FIS 数据流发送给 HBA (**Verilog**)
   - RTL/fpga_uart_sata_example/**uart_tx.sv** : 接收 HBA 收到的 FIS，把它转换成人类可读的 ASCII-HEX 格式并用 UART 发送给 Host-PC (**Verilog**)
 

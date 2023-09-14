@@ -65,8 +65,10 @@ clk_wiz_0 clk_wiz_i (
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // SATA HBA
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-sata_hba_top sata_hba_i (
-    .rstn                     ( rstn                                   ),
+sata_hba_top #(
+    .SIM_GT_RESET_SPEEDUP     ( "FALSE"                                )    // Set to "FALSE" while synthesis, set to "TRUE" to speed-up simulation.
+) sata_hba_i (
+    .rstn                     ( rstn                                   ),   // 0:reset   1:work
     .cpll_refclk              ( cpll_refclk                            ),   // 60MHz clock is required
     // SATA GT reference clock, connect to clock source on FPGA board
     .gt_refclkp               ( SATA_CLK_P                             ),
